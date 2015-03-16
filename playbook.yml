@@ -1,0 +1,29 @@
+---
+- hosts: all
+  remote_user: ec2-user
+  sudo: yes
+  tasks:
+  - name: yum update
+    yum: name=* state=latest
+  - name: required package install
+    yum: name="@Development tools" state=present
+    yum: name={{ item }} state=present
+    with_items:
+    - emacs
+    - java-1.8.0-openjdk-devel
+    - libcurl-devel
+  - name: import rpm key
+    rpm_key: key=https://packages.elasticsearch.org/GPG-KEY-elasticsearch  state=present
+  - name: copy elasticsearch repo
+    copy: src=file/elasticsearch.repo dest=/etc/yum.repos.d/elasticsearch.repo
+  - name: install elasticsearch
+    yum: name=elasticsearch state=latest
+  - name: change java version
+    shell: alternatives --set java /usr/lib/jvm/java-1.8.0-openjdk-1.8.0.31-2.b13.5.amzn1.x86_64/jre/bin/java
+  - name: copy elasticserch config file
+    copy: src=file/elasticsearch.yml dest=/etc/elasticsearch/elasticsearch.yml force=yes
+  - name: start elasticsearch
+    service: name=elasticsearch enabled=yes
+    service: name=elasticsearch state=started
+  - name: add chkconfig elasticsearch
+    shell: chkconfig --add elasticsearch
